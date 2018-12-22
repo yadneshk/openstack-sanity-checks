@@ -41,17 +41,17 @@ def check_compute():
 	print("\n")
 
 
-def check_neutron():
+def check_neutron(expected_status):
 	print("CHECKING FOR NEUTRON SERVICES")
 	neutron = "source ~/overcloudrc; openstack network agent list -c 'Binary' -c 'Host' -c 'Alive' -f json"
 	data = subprocess.check_output(neutron, shell=True)
 	data_json = json.loads(data)
 	status = True
         for service in data_json:
-                if service['Alive'] != ':-)':
+                if str(service['Alive']).lower() != expected_status :
                         print('\033[1;91mNEUTRON SERVICES.....FAILED\033[1;m')
                         for service in data_json:
-		                if service['Alive'] != ':-)':
+		                if str(service['Alive']).lower() != expected_status:
                 		        print('\033[1;91m%s on %s .....DOWN\033[1;m' % (service['Binary'], service['Host']))
                 		else:
                         		print('\033[1;32m%s on %s .....UP\033[1;m' % (service['Binary'], service['Host']))
@@ -82,8 +82,34 @@ def print_services(data_json):
                 else:
                         print('\033[1;32m%s on %s .....UP\033[1;m' % (service['Binary'], service['Host']))
 
+def check_osp13_services():
+	check_baremetal_nodes()
+	check_cinder()
+	check_compute()
+	check_neutron(":-)")
 
-check_baremetal_nodes()
-check_cinder()
-check_compute()
-check_neutron()
+def check_osp10_services():
+	check_baremetal_nodes()
+	check_cinder()
+	check_compute()
+	check_neutron("true")
+
+
+def ask_osp_version():
+	print("OSP Version(10 or 13)")
+	return raw_input()
+
+
+def main():
+	osp_version = int(ask_osp_version())
+	if osp_version == 13:
+		print("CHECKING SERVICES FOR OSP13")
+		check_osp13_services()
+	elif osp_version == 10:
+		print("CHECKING SERVICES FOR OSP10")
+		check_osp10_services()
+	else:
+		print("Invalid version number")
+
+
+main()
