@@ -2,6 +2,8 @@ import json
 import subprocess
 import os
 
+controllers_list = []
+
 def check_baremetal_nodes():
 	print("CHECKING BAREMETAL NODE STATUS")
 	baremetal_nodes = "source ~/stackrc; openstack baremetal node list -c 'Name' -c 'Power State' -c 'Provisioning State' -c 'Maintenance' -f json"
@@ -82,6 +84,21 @@ def print_services(data_json):
                 else:
                         print('\033[1;32m%s on %s .....UP\033[1;m' % (service['Binary'], service['Host']))
 
+
+#def check_systemd_services():
+def get_controllers_ip():
+	print("Enter controller count")
+	controller_count = int(raw_input())
+	for i in range(0,controller_count):
+		controllers_list.append(raw_input("Enter controller ip\n").strip())
+	print(controllers_list)
+	for controller in controllers_list:
+		systemd_service = "ssh heat-admin@" + controller + " sudo systemctl list-units --state=failed 'openstack*' 'neutron*' 'httpd' 'docker' 'ceph*'"
+		data = subprocess.check_output(systemd_service, shell=True)
+		print(data)
+
+
+
 def check_osp13_services():
 	check_baremetal_nodes()
 	check_cinder()
@@ -91,8 +108,9 @@ def check_osp13_services():
 def check_osp10_services():
 	check_baremetal_nodes()
 	check_cinder()
-	check_compute()
+	#check_compute()
 	check_neutron("true")
+	get_controllers_ip()
 
 
 def ask_osp_version():
