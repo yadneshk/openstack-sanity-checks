@@ -85,32 +85,65 @@ def print_services(data_json):
                         print('\033[1;32m%s on %s .....UP\033[1;m' % (service['Binary'], service['Host']))
 
 
-#def check_systemd_services():
+def check_systemd_services():
+	for controller in controllers_list:
+                systemd_service = "ssh heat-admin@" + controller + " sudo systemctl list-units --state=failed 'openstack*' 'neutron*' 'httpd' 'docker' 'ceph*'"
+                data = subprocess.check_output(systemd_service, shell=True)
+                print(data)
+
+
+
 def get_controllers_ip():
 	print("Enter controller count")
 	controller_count = int(raw_input())
 	for i in range(0,controller_count):
 		controllers_list.append(raw_input("Enter controller ip\n").strip())
-	print(controllers_list)
+
+
+def check_haproxy_status():
+	haproxy_credentials = 'ssh heat-admin@' + controllers_list[0] +  ''' "sudo grep 'listen haproxy.stats' -A 6 /var/lib/config-data/puppet-generated/haproxy/etc/haproxy/haproxy.cfg" '''
+	data = subprocess.check_output(haproxy_credentials, shell=True)
+        data = data.split("\n")
+	data = [x.strip() for x in data]
+	data = list(filter(None,data))
+	
+
+
+def check_containers():
 	for controller in controllers_list:
-		systemd_service = "ssh heat-admin@" + controller + " sudo systemctl list-units --state=failed 'openstack*' 'neutron*' 'httpd' 'docker' 'ceph*'"
-		data = subprocess.check_output(systemd_service, shell=True)
-		print(data)
+		containers_service = "ssh heat-admin@" + controller + " sudo docker ps -f 'exited=1' --all"
+                data = subprocess.check_output(containers_service, shell=True)
+                print(data)
+		
+		systemd_service = "ssh heat-admin@" + controller + " sudo docker ps -f 'status=dead' -f 'status=restarting'"
+                data = subprocess.check_output(systemd_service, shell=True)
+                print(data)
+		
 
 
 
 def check_osp13_services():
+	print("OVERCLOUD NODES")
+	os.system("source ~/stackrc; nova list")
+	get_controllers_ip()
+	check_systemd_services()
 	check_baremetal_nodes()
 	check_cinder()
 	check_compute()
 	check_neutron(":-)")
+	check_containers()
+	check_haproxy_status()
 
 def check_osp10_services():
+	print("OVERCLOUD NODES")
+	os.system("source ~/stackrc; nova list")
+	get_controllers_ip()
+	check_systemd_services()
 	check_baremetal_nodes()
 	check_cinder()
-	#check_compute()
+	check_compute()
 	check_neutron("true")
-	get_controllers_ip()
+	check_haproxy_status()
 
 
 def ask_osp_version():
