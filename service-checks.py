@@ -101,14 +101,13 @@ def get_controllers_ip():
 
 
 def check_haproxy_status(haproxy_config):
-	haproxy_credentials = 'ssh heat-admin@' + controllers_list[0] +  ''' "sudo grep 'listen haproxy.stats' -A 6 " ''' + haproxy_config 
-	data = subprocess.check_output(haproxy_credentials, shell=True)
-        data = data.split("\n")
-	data = [x.strip() for x in data]
-	data = list(filter(None,data))
-	print(data)
-	
-
+	vip_password_cmd = 'ssh heat-admin@' + controllers_list[0] + ''' "sudo grep 'listen haproxy.stats' -A 6 " ''' + haproxy_config + ''' | awk '{print $3}' | cut -d ":" -f 2 | sed -n 6p '''
+	vip_password = subprocess.check_output(vip_password_cmd, shell=True).strip()
+	controller_vip_cmd = 'ssh heat-admin@' + controllers_list[0] + ''' "sudo grep 'listen haproxy.stats' -A 6 " ''' + haproxy_config + ''' | awk '{print $2}' | cut -d ":" -f 1 | sed -n 2p'''
+	controller_vip = subprocess.check_output(controller_vip_cmd, shell=True).strip()
+	haproxy_status_cmd = 'curl -s -u admin:' + vip_password + ''' "http://''' + controller_vip + ''':1993/;csv" ''' + ''' | egrep -vi "(frontend|backend)" | awk -F',' '{ print $1" "$2" "$18 }' '''
+	haproxy_status = subprocess.check_output(haproxy_status_cmd, shell=True)
+	print(haproxy_status)
 
 def check_containers():
 	for controller in controllers_list:
