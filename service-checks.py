@@ -100,12 +100,13 @@ def get_controllers_ip():
 		controllers_list.append(raw_input("Enter controller ip\n").strip())
 
 
-def check_haproxy_status():
-	haproxy_credentials = 'ssh heat-admin@' + controllers_list[0] +  ''' "sudo grep 'listen haproxy.stats' -A 6 /var/lib/config-data/puppet-generated/haproxy/etc/haproxy/haproxy.cfg" '''
+def check_haproxy_status(haproxy_config):
+	haproxy_credentials = 'ssh heat-admin@' + controllers_list[0] +  ''' "sudo grep 'listen haproxy.stats' -A 6 " ''' + haproxy_config 
 	data = subprocess.check_output(haproxy_credentials, shell=True)
         data = data.split("\n")
 	data = [x.strip() for x in data]
 	data = list(filter(None,data))
+	print(data)
 	
 
 
@@ -132,7 +133,7 @@ def check_osp13_services():
 	check_compute()
 	check_neutron(":-)")
 	check_containers()
-	check_haproxy_status()
+	check_haproxy_status("/var/lib/config-data/puppet-generated/haproxy/etc/haproxy/haproxy.cfg")
 
 def check_osp10_services():
 	print("OVERCLOUD NODES")
@@ -143,7 +144,7 @@ def check_osp10_services():
 	check_cinder()
 	check_compute()
 	check_neutron("true")
-	check_haproxy_status()
+	check_haproxy_status("/etc/haproxy/haproxy.cfg")
 
 
 def ask_osp_version():
