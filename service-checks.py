@@ -149,8 +149,6 @@ def check_osp13_services():
 	check_neutron(":-)")
 	check_containers()
 	check_haproxy_status("/var/lib/config-data/puppet-generated/haproxy/etc/haproxy/haproxy.cfg")
-	check_db_replication_health(" sudo docker exec clustercheck clustercheck")
-	check_rabbitmq_replication_health("sudo docker exec $(ssh heat-admin@ "sudo docker ps -f 'name=.*rabbitmq.*' -q") rabbitmqctl node_health_check")
 
 
 def check_osp10_services():
