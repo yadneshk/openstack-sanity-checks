@@ -138,6 +138,22 @@ def check_rabbitmq_replication_health_osp10():
                 data = subprocess.check_output(containers_service, shell=True)
                 print(data)
 		
+def check_db_replication_health_osp13():
+        for controller in controllers_list:
+                print(controller)
+                containers_service = "ssh heat-admin@" + controller + " sudo docker exec clustercheck clustercheck"
+                data = subprocess.check_output(containers_service, shell=True)
+                print(data)
+
+
+def check_rabbitmq_replication_health_osp13():
+        for controller in controllers_list:
+                print(controller)
+                containers_service = '''ssh heat-admin@''' + controller + ''' sudo docker exec $(ssh heat-admin@''' + controller + ''' sudo docker ps -f 'name=.*rabbitmq.*' -q) rabbitmqctl node_health_check'''
+                data = subprocess.check_output(containers_service, shell=True)
+                print(data)
+
+		
 def check_osp13_services():
 	print("OVERCLOUD NODES")
 	os.system("source ~/stackrc; nova list")
@@ -149,6 +165,9 @@ def check_osp13_services():
 	check_neutron(":-)")
 	check_containers()
 	check_haproxy_status("/var/lib/config-data/puppet-generated/haproxy/etc/haproxy/haproxy.cfg")
+	check_db_replication_health_osp13()
+        check_rabbitmq_replication_health_osp13()
+
 
 
 def check_osp10_services():
