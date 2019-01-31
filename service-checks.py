@@ -153,6 +153,13 @@ def check_rabbitmq_replication_health_osp13():
                 data = subprocess.check_output(containers_service, shell=True)
                 print(data)
 
+
+def check_pcs_status():
+	print("CHECKING PCS STATUS")
+	pcs_status_command = "ssh heat-admin@" + controllers_list[0] + " sudo pcs status"
+	data = subprocess.check_output(pcs_status_command, shell=True)
+        print(data)
+
 		
 def check_osp13_services():
 	print("OVERCLOUD NODES")
@@ -167,6 +174,7 @@ def check_osp13_services():
 	check_haproxy_status("/var/lib/config-data/puppet-generated/haproxy/etc/haproxy/haproxy.cfg")
 	check_db_replication_health_osp13()
         check_rabbitmq_replication_health_osp13()
+	check_pcs_status()
 
 
 
@@ -182,6 +190,7 @@ def check_osp10_services():
 	check_haproxy_status("/etc/haproxy/haproxy.cfg")
 	check_db_replication_health_osp10()
 	check_rabbitmq_replication_health_osp10()
+	check_pcs_status()
 
 
 def ask_osp_version():
