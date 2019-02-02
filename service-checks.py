@@ -169,6 +169,16 @@ def check_pcs_status():
         print(data)
 
 		
+def check_disk_size():
+	print("\033[1;96m\n%s\033[1;m" % "CHECKING DISK SIZE ON ALL NODES")
+	node_names_cmd = "nova list | awk '{print $4}' | awk 'NR > 2' | awk 'NF > 0'"
+	node_names = subprocess.check_output(node_names_cmd, shell=True)
+	print(filter(None, node_names.split("\n")))
+	node_ip_cmd = "nova list | awk '{print $12}' | awk 'NR > 2' | cut -d = -f 2 | awk 'NF > 0'"
+	node_ip = subprocess.check_output(node_ip_cmd, shell=True)
+	print(filter(None, node_ip.split("\n")))
+	
+
 def check_osp13_services():
 	print("\033[1;96m\n%s\033[1;m" % "OVERCLOUD NODES")
 	os.system("source ~/stackrc; nova list")
@@ -183,6 +193,7 @@ def check_osp13_services():
 	check_db_replication_health_osp13()
     	check_rabbitmq_replication_health_osp13()
 	check_pcs_status()
+	check_disk_size()
 
 
 
@@ -199,6 +210,7 @@ def check_osp10_services():
 	check_db_replication_health_osp10()
 	check_rabbitmq_replication_health_osp10()
 	check_pcs_status()
+	check_disk_size()
 
 
 def ask_osp_version():
