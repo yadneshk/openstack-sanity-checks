@@ -5,14 +5,14 @@ import os
 controllers_list = []
 
 def check_baremetal_nodes():
-	print("CHECKING BAREMETAL NODE STATUS")
+	print("\033[1;96m\n%s\n\033[1;m" % "CHECKING BAREMETAL NODE STATUS")
 	baremetal_nodes = "source ~/stackrc; openstack baremetal node list -c 'Name' -c 'Power State' -c 'Provisioning State' -c 'Maintenance' -f json"
 	data = subprocess.check_output(baremetal_nodes, shell=True)
 	nodes_data_json = json.loads(data)
 	all_nodes_clean = True
 	for node in nodes_data_json:
 		if node['Maintenance'] or node['Provisioning State'] != 'active' or node['Power State'] != 'power on':
-			print('\033[1;91mBAREMETAL NODE STATUS.....FAILED\033[1;m')
+			print('\033[1;91m%s\033[1;m' % "BAREMETAL NODE STATUS.....FAILED")
 			all_nodes_clean = False
 			break
 	if not all_nodes_clean:
@@ -20,10 +20,10 @@ def check_baremetal_nodes():
 			if node['Maintenance'] or node['Provisioning State'] != 'active' or node['Power State'] != 'power on':
 				print('\033[1;91mNode %s Status Maintenance=%s, Provisioning State=%s, Power State=%s.....FAILED\033[1;m' % (node['Name'], node['Maintenance'], node['Provisioning State'], node['Power State']))
 			else:
-				print('\033[1;32mNODE %s STATUS.....OK\033[1;m' % (node['Name']))
+				print('\033[1;92mNODE %s STATUS.....OK\033[1;m' % (node['Name']))
 
 	else:
-		print('\033[1;32mBAREMETAL NODE STATUS.....OK\033[1;m')
+		print('\033[1;92m%s\033[1;m' % "BAREMETAL NODE STATUS.....OK")
 	print("\n")
 
 
@@ -51,21 +51,21 @@ def check_neutron(expected_status):
 	status = True
         for service in data_json:
                 if str(service['Alive']).lower() != expected_status :
-                        print('\033[1;91mNEUTRON SERVICES.....FAILED\033[1;m')
+                        print('\033[1;91m%s\033[1;m' % "NEUTRON SERVICES.....FAILED")
                         for service in data_json:
 		                if str(service['Alive']).lower() != expected_status:
                 		        print('\033[1;91m%s on %s .....DOWN\033[1;m' % (service['Binary'], service['Host']))
                 		else:
-                        		print('\033[1;32m%s on %s .....UP\033[1;m' % (service['Binary'], service['Host']))
+                        		print('\033[1;92m%s on %s .....UP\033[1;m' % (service['Binary'], service['Host']))
 			status = False
                         break
         if status:
-                print('\033[1;32mNEUTRON SERVICES.....UP\033[1;m')
+                print('\033[1;92m%s\033[1;m' % "NEUTRON SERVICES.....UP")
 	print("\n")
 
 
 def service_status(service_name, data_json):
-        print("CHECKING FOR %s SERVICES" % (service_name))
+        print("\033[1;96mCHECKING FOR %s SERVICES\033[1;m" % (service_name))
         status = True
         for service in data_json:
                 if service['State'].lower() != 'up':
@@ -74,7 +74,7 @@ def service_status(service_name, data_json):
                         status = False
                         break
         if status:
-                print('\033[1;32m%s SERVICES.....UP\033[1;m' % (service_name))
+                print('\033[1;92m%s SERVICES.....UP\033[1;m' % (service_name))
 
 
 def print_services(data_json):
@@ -82,10 +82,11 @@ def print_services(data_json):
                 if service['State'].lower() != 'up':
                         print('\033[1;91m%s on %s .....DOWN\033[1;m' % (service['Binary'], service['Host']))
                 else:
-                        print('\033[1;32m%s on %s .....UP\033[1;m' % (service['Binary'], service['Host']))
+                        print('\033[1;92m%s on %s .....UP\033[1;m' % (service['Binary'], service['Host']))
 
 
 def check_systemd_services():
+	print("\033[1;96m\n%s\n\033[1;m" % "CHECKING SYSTEMD SERVICES")
 	for controller in controllers_list:
                 systemd_service = "ssh heat-admin@" + controller + " sudo systemctl list-units --state=failed 'openstack*' 'neutron*' 'httpd' 'docker' 'ceph*'"
                 data = subprocess.check_output(systemd_service, shell=True)
@@ -97,10 +98,11 @@ def get_controllers_ip():
 	print("Enter controller count")
 	controller_count = int(raw_input())
 	for i in range(0,controller_count):
-		controllers_list.append(raw_input("Enter controller ip\n").strip())
+		controllers_list.append(raw_input("\n Enter controller ip\n").strip())
 
 
 def check_haproxy_status(haproxy_config):
+	print("\033[1;96m\n%s\n\033[1;m" % "CHECKING HAPROXY STATUS")
 	vip_password_cmd = 'ssh heat-admin@' + controllers_list[0] + ''' "sudo grep 'listen haproxy.stats' -A 6 " ''' + haproxy_config + ''' | awk '{print $3}' | cut -d ":" -f 2 | sed -n 6p '''
 	vip_password = subprocess.check_output(vip_password_cmd, shell=True).strip()
 	controller_vip_cmd = 'ssh heat-admin@' + controllers_list[0] + ''' "sudo grep 'listen haproxy.stats' -A 6 " ''' + haproxy_config + ''' | awk '{print $2}' | cut -d ":" -f 1 | sed -n 2p'''
@@ -111,6 +113,7 @@ def check_haproxy_status(haproxy_config):
 
 
 def check_containers():
+	print("\033[1;96m\n%s\n\033[1;m" % "CHECKING CONTAINER SERVICES")
 	for controller in controllers_list:
 		print(controller)
 		containers_service = "ssh heat-admin@" + controller + " sudo docker ps -f 'exited=1' --all"
@@ -123,6 +126,7 @@ def check_containers():
 		
 
 def check_db_replication_health_osp10():
+	print("\033[1;96m\n%s\n\033[1;m" % "CHECKING GALERA HEALTH")
 	for controller in controllers_list:
 		print(controller)
 		containers_service = "ssh heat-admin@" + controller + " sudo clustercheck" 
@@ -132,6 +136,7 @@ def check_db_replication_health_osp10():
 	
 
 def check_rabbitmq_replication_health_osp10():
+	print("\033[1;96m\n%s\n\033[1;m" % "CHECKING RABBITMQ HEALTH")
 	for controller in controllers_list:
 		print(controller)
 		containers_service = "ssh heat-admin@" + controller + " sudo rabbitmqctl node_health_check"
@@ -139,30 +144,32 @@ def check_rabbitmq_replication_health_osp10():
                 print(data)
 		
 def check_db_replication_health_osp13():
-        for controller in controllers_list:
-                print(controller)
-                containers_service = "ssh heat-admin@" + controller + " sudo docker exec clustercheck clustercheck"
-                data = subprocess.check_output(containers_service, shell=True)
-                print(data)
+	print("\033[1;96m\n%s\n\033[1;m" % "CHECKING GALERA HEALTH")
+    	for controller in controllers_list:
+        	print(controller)
+        	containers_service = "ssh heat-admin@" + controller + " sudo docker exec clustercheck clustercheck"
+	        data = subprocess.check_output(containers_service, shell=True)
+        	print(data)
 
 
 def check_rabbitmq_replication_health_osp13():
-        for controller in controllers_list:
-                print(controller)
-                containers_service = '''ssh heat-admin@''' + controller + ''' sudo docker exec $(ssh heat-admin@''' + controller + ''' sudo docker ps -f 'name=.*rabbitmq.*' -q) rabbitmqctl node_health_check'''
-                data = subprocess.check_output(containers_service, shell=True)
-                print(data)
+	print("\033[1;96m\n%s\n\033[1;m" % "CHECKING RABBITMQ HEALTH")
+	for controller in controllers_list:
+        	print(controller)
+        	containers_service = '''ssh heat-admin@''' + controller + ''' sudo docker exec $(ssh heat-admin@''' + controller + ''' sudo docker ps -f 'name=.*rabbitmq.*' -q) rabbitmqctl node_health_check'''
+        	data = subprocess.check_output(containers_service, shell=True)
+        	print(data)
 
 
 def check_pcs_status():
-	print("CHECKING PCS STATUS")
+	print("\033[1;96m\n%s\n\033[1;m" % "CHECKING PCS STATUS")
 	pcs_status_command = "ssh heat-admin@" + controllers_list[0] + " sudo pcs status"
 	data = subprocess.check_output(pcs_status_command, shell=True)
         print(data)
 
 		
 def check_osp13_services():
-	print("OVERCLOUD NODES")
+	print("\033[1;96m\n%s\n\033[1;m" % "OVERCLOUD NODES")
 	os.system("source ~/stackrc; nova list")
 	get_controllers_ip()
 	check_systemd_services()
@@ -173,13 +180,13 @@ def check_osp13_services():
 	check_containers()
 	check_haproxy_status("/var/lib/config-data/puppet-generated/haproxy/etc/haproxy/haproxy.cfg")
 	check_db_replication_health_osp13()
-        check_rabbitmq_replication_health_osp13()
+    	check_rabbitmq_replication_health_osp13()
 	check_pcs_status()
 
 
 
 def check_osp10_services():
-	print("OVERCLOUD NODES")
+	print("\033[1;96m%s\033[1;m" % "OVERCLOUD NODES")
 	os.system("source ~/stackrc; nova list")
 	get_controllers_ip()
 	check_systemd_services()
@@ -194,20 +201,20 @@ def check_osp10_services():
 
 
 def ask_osp_version():
-	print("OSP Version(10 or 13)")
+	print("\033[1;96m%s\033[1;m" % "OSP Version(10 or 13)")
 	return raw_input()
 
 
 def main():
 	osp_version = int(ask_osp_version())
 	if osp_version == 13:
-		print("CHECKING SERVICES FOR OSP13")
+		print("\033[1;96m\n%s\n\033[1;m" % "CHECKING SERVICES FOR OSP13")
 		check_osp13_services()
 	elif osp_version == 10:
-		print("CHECKING SERVICES FOR OSP10")
+		print("\033[1;96m\n%s\n\033[1;m" % "CHECKING SERVICES FOR OSP10")
 		check_osp10_services()
 	else:
-		print("Invalid version number")
+		print("\033[1;91m\n%s\n\033[1;m" % "Invalid version number")
 
 
 main()
