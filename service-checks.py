@@ -5,7 +5,7 @@ import os
 controllers_list = []
 
 def check_baremetal_nodes():
-	print("\033[1;96m\n%s\n\033[1;m" % "CHECKING BAREMETAL NODE STATUS")
+	print("\033[1;96m\n%s\033[1;m" % "CHECKING BAREMETAL NODE STATUS")
 	baremetal_nodes = "source ~/stackrc; openstack baremetal node list -c 'Name' -c 'Power State' -c 'Provisioning State' -c 'Maintenance' -f json"
 	data = subprocess.check_output(baremetal_nodes, shell=True)
 	nodes_data_json = json.loads(data)
@@ -44,7 +44,7 @@ def check_compute():
 
 
 def check_neutron(expected_status):
-	print("CHECKING FOR NEUTRON SERVICES")
+	print("\nCHECKING FOR NEUTRON SERVICES")
 	neutron = "source ~/overcloudrc; openstack network agent list -c 'Binary' -c 'Host' -c 'Alive' -f json"
 	data = subprocess.check_output(neutron, shell=True)
 	data_json = json.loads(data)
@@ -86,7 +86,7 @@ def print_services(data_json):
 
 
 def check_systemd_services():
-	print("\033[1;96m\n%s\n\033[1;m" % "CHECKING SYSTEMD SERVICES")
+	print("\033[1;96m\n%s\033[1;m" % "CHECKING SYSTEMD SERVICES")
 	for controller in controllers_list:
                 systemd_service = "ssh heat-admin@" + controller + " sudo systemctl list-units --state=failed 'openstack*' 'neutron*' 'httpd' 'docker' 'ceph*'"
                 data = subprocess.check_output(systemd_service, shell=True)
@@ -95,14 +95,15 @@ def check_systemd_services():
 
 
 def get_controllers_ip():
-	print("Enter controller count")
+	print("\nEnter controller count")
 	controller_count = int(raw_input())
 	for i in range(0,controller_count):
-		controllers_list.append(raw_input("\n Enter controller ip\n").strip())
+		print("\nEnter controller-%s IP" % (i))
+		controllers_list.append(raw_input().strip())
 
 
 def check_haproxy_status(haproxy_config):
-	print("\033[1;96m\n%s\n\033[1;m" % "CHECKING HAPROXY STATUS")
+	print("\033[1;96m\n%s\033[1;m" % "CHECKING HAPROXY STATUS")
 	vip_password_cmd = 'ssh heat-admin@' + controllers_list[0] + ''' "sudo grep 'listen haproxy.stats' -A 6 " ''' + haproxy_config + ''' | awk '{print $3}' | cut -d ":" -f 2 | sed -n 6p '''
 	vip_password = subprocess.check_output(vip_password_cmd, shell=True).strip()
 	controller_vip_cmd = 'ssh heat-admin@' + controllers_list[0] + ''' "sudo grep 'listen haproxy.stats' -A 6 " ''' + haproxy_config + ''' | awk '{print $2}' | cut -d ":" -f 1 | sed -n 2p'''
@@ -113,7 +114,7 @@ def check_haproxy_status(haproxy_config):
 
 
 def check_containers():
-	print("\033[1;96m\n%s\n\033[1;m" % "CHECKING CONTAINER SERVICES")
+	print("\033[1;96m\n%s\033[1;m" % "CHECKING CONTAINER SERVICES")
 	for controller in controllers_list:
 		print(controller)
 		containers_service = "ssh heat-admin@" + controller + " sudo docker ps -f 'exited=1' --all"
@@ -126,7 +127,7 @@ def check_containers():
 		
 
 def check_db_replication_health_osp10():
-	print("\033[1;96m\n%s\n\033[1;m" % "CHECKING GALERA HEALTH")
+	print("\033[1;96m\n%s\033[1;m" % "CHECKING GALERA HEALTH")
 	for controller in controllers_list:
 		print(controller)
 		containers_service = "ssh heat-admin@" + controller + " sudo clustercheck" 
@@ -136,7 +137,7 @@ def check_db_replication_health_osp10():
 	
 
 def check_rabbitmq_replication_health_osp10():
-	print("\033[1;96m\n%s\n\033[1;m" % "CHECKING RABBITMQ HEALTH")
+	print("\033[1;96m\n%s\033[1;m" % "CHECKING RABBITMQ HEALTH")
 	for controller in controllers_list:
 		print(controller)
 		containers_service = "ssh heat-admin@" + controller + " sudo rabbitmqctl node_health_check"
@@ -144,7 +145,7 @@ def check_rabbitmq_replication_health_osp10():
                 print(data)
 		
 def check_db_replication_health_osp13():
-	print("\033[1;96m\n%s\n\033[1;m" % "CHECKING GALERA HEALTH")
+	print("\033[1;96m\n%s\033[1;m" % "CHECKING GALERA HEALTH")
     	for controller in controllers_list:
         	print(controller)
         	containers_service = "ssh heat-admin@" + controller + " sudo docker exec clustercheck clustercheck"
@@ -153,7 +154,7 @@ def check_db_replication_health_osp13():
 
 
 def check_rabbitmq_replication_health_osp13():
-	print("\033[1;96m\n%s\n\033[1;m" % "CHECKING RABBITMQ HEALTH")
+	print("\033[1;96m\n%s\033[1;m" % "CHECKING RABBITMQ HEALTH")
 	for controller in controllers_list:
         	print(controller)
         	containers_service = '''ssh heat-admin@''' + controller + ''' sudo docker exec $(ssh heat-admin@''' + controller + ''' sudo docker ps -f 'name=.*rabbitmq.*' -q) rabbitmqctl node_health_check'''
@@ -162,14 +163,14 @@ def check_rabbitmq_replication_health_osp13():
 
 
 def check_pcs_status():
-	print("\033[1;96m\n%s\n\033[1;m" % "CHECKING PCS STATUS")
+	print("\033[1;96m\n%s\033[1;m" % "CHECKING PCS STATUS")
 	pcs_status_command = "ssh heat-admin@" + controllers_list[0] + " sudo pcs status"
 	data = subprocess.check_output(pcs_status_command, shell=True)
         print(data)
 
 		
 def check_osp13_services():
-	print("\033[1;96m\n%s\n\033[1;m" % "OVERCLOUD NODES")
+	print("\033[1;96m\n%s\033[1;m" % "OVERCLOUD NODES")
 	os.system("source ~/stackrc; nova list")
 	get_controllers_ip()
 	check_systemd_services()
