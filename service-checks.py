@@ -44,7 +44,7 @@ def check_compute():
 
 
 def check_neutron(expected_status):
-	print("\nCHECKING FOR NEUTRON SERVICES")
+	print("\033[1;96m\n%s\033[1;m" % "CHECKING FOR NEUTRON SERVICES")
 	neutron = "source ~/overcloudrc; openstack network agent list -c 'Binary' -c 'Host' -c 'Alive' -f json"
 	data = subprocess.check_output(neutron, shell=True)
 	data_json = json.loads(data)
