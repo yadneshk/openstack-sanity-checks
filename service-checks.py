@@ -171,12 +171,32 @@ def check_pcs_status():
 		
 def check_disk_size():
 	print("\033[1;96m\n%s\033[1;m" % "CHECKING DISK SIZE ON ALL NODES")
-	node_names_cmd = "nova list | awk '{print $4}' | awk 'NR > 2' | awk 'NF > 0'"
+	node_names_cmd = "source ~/stackrc; nova list | awk '{print $4}' | awk 'NR > 2' | awk 'NF > 0'"
 	node_names = subprocess.check_output(node_names_cmd, shell=True)
-	print(filter(None, node_names.split("\n")))
-	node_ip_cmd = "nova list | awk '{print $12}' | awk 'NR > 2' | cut -d = -f 2 | awk 'NF > 0'"
+	node_name_list = filter(None, node_names.split("\n"))
+	node_ip_cmd = "source ~/stackrc; nova list | awk '{print $12}' | awk 'NR > 2' | cut -d = -f 2 | awk 'NF > 0'"
 	node_ip = subprocess.check_output(node_ip_cmd, shell=True)
-	print(filter(None, node_ip.split("\n")))
+	node_ip_list = filter(None, node_ip.split("\n"))
+	nodes = dict(zip(node_name_list,node_ip_list))
+	for node_name,node_ip in nodes.iteritems():
+		print("\033[1;96m\n%s %s %s\033[1;m" % ("DISK SIZE ON", node_name, "NODE"))
+		disk_space_cmd = "ssh heat-admin@" + node_ip + ''' " sudo df -h --output=source,fstype,avail -x overlay -x tmpfs -x devtmpfs" '''
+		disk_space = subprocess.check_output(disk_space_cmd, shell=True)
+		print(disk_space)
+			
+
+def check_ceph_cluster():
+	print("\033[1;96m\n%s\033[1;m" % "CHECKING CEPH CLUSTER")
+	cluster_status_cmd = "ssh heat-admin@" + controllers_list[0] + " sudo ceph -s"
+	cluster_status = subprocess.check_output(cluster_status_cmd, shell=True)
+	print(cluster_status)
+	
+
+def check_osd_freespace():
+	print("\033[1;96m\n%s\033[1;m" % "CHECKING CEPH OSD FREE SPACE")
+	osd_freespace_cmd = "ssh heat-admin@" + controllers_list[0] + " sudo ceph df"
+	osd_freespace_status = subprocess.check_output(osd_freespace_cmd, shell=True)
+	print(osd_freespace_status)
 	
 
 def check_osp13_services():
@@ -194,8 +214,17 @@ def check_osp13_services():
     	check_rabbitmq_replication_health_osp13()
 	check_pcs_status()
 	check_disk_size()
+	print("\033[1;96m\n%s\033[1;m" % "CHECK FOR CEPH CLUSTER AND FREE OSD SPACE(y/n) ?")
+	ceph_check_choice = raw_input()
+	if ceph_check_choice == "y":
+		check_ceph_cluster()
+		check_osd_freespace()
+	elif ceph_check_choice == "n":
+		pass
+	else:
+		print("\033[1;91m\n%s\033[1;m" % "INVALID CHOICE")
 
-
+		
 
 def check_osp10_services():
 	print("\033[1;96m%s\033[1;m" % "OVERCLOUD NODES")
@@ -211,6 +240,7 @@ def check_osp10_services():
 	check_rabbitmq_replication_health_osp10()
 	check_pcs_status()
 	check_disk_size()
+	check_ceph_cluster()
 
 
 def ask_osp_version():
