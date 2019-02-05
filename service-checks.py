@@ -3,6 +3,17 @@ import subprocess
 import os
 
 controllers_list = []
+nodes = dict()
+
+def get_overcloud_nodes():
+	node_names_cmd = "source ~/stackrc; nova list | awk '{print $4}' | awk 'NR > 2' | awk 'NF > 0'"
+	node_names = subprocess.check_output(node_names_cmd, shell=True)
+	node_name_list = filter(None, node_names.split("\n"))
+	node_ip_cmd = "source ~/stackrc; nova list | awk '{print $12}' | awk 'NR > 2' | cut -d = -f 2 | awk 'NF > 0'"
+	node_ip = subprocess.check_output(node_ip_cmd, shell=True)
+	node_ip_list = filter(None, node_ip.split("\n"))
+	nodes_local = zip(node_name_list,node_ip_list)
+	nodes.update(nodes_local)
 
 def check_baremetal_nodes():
 	print("\033[1;96m\n%s\033[1;m" % "CHECKING BAREMETAL NODE STATUS")
@@ -171,13 +182,6 @@ def check_pcs_status():
 		
 def check_disk_size():
 	print("\033[1;96m\n%s\033[1;m" % "CHECKING DISK SIZE ON ALL NODES")
-	node_names_cmd = "source ~/stackrc; nova list | awk '{print $4}' | awk 'NR > 2' | awk 'NF > 0'"
-	node_names = subprocess.check_output(node_names_cmd, shell=True)
-	node_name_list = filter(None, node_names.split("\n"))
-	node_ip_cmd = "source ~/stackrc; nova list | awk '{print $12}' | awk 'NR > 2' | cut -d = -f 2 | awk 'NF > 0'"
-	node_ip = subprocess.check_output(node_ip_cmd, shell=True)
-	node_ip_list = filter(None, node_ip.split("\n"))
-	nodes = dict(zip(node_name_list,node_ip_list))
 	for node_name,node_ip in nodes.iteritems():
 		print("\033[1;96m\n%s %s %s\033[1;m" % ("DISK SIZE ON", node_name, "NODE"))
 		disk_space_cmd = "ssh heat-admin@" + node_ip + ''' " sudo df -h --output=source,fstype,avail -x overlay -x tmpfs -x devtmpfs" '''
@@ -199,10 +203,21 @@ def check_osd_freespace():
 	print(osd_freespace_status)
 	
 
+def check_ntp_status():
+	print("\033[1;96m\n%s\033[1;m" % "CHECKING NTP ON ALL NODES")
+	for node_name,node_ip in nodes.iteritems():
+		print("\033[1;96m\n%s %s %s\033[1;m" % ("NTP STATUS ON", node_name, "NODE"))
+		ntp_status_cmd = "ssh heat-admin@" + node_ip + ''' "sudo ntpstat" '''
+		ntp_status = subprocess.check_output(ntp_status_cmd, shell=True)
+		print(ntp_status)
+
+
 def check_osp13_services():
 	print("\033[1;96m\n%s\033[1;m" % "OVERCLOUD NODES")
 	os.system("source ~/stackrc; nova list")
 	get_controllers_ip()
+	get_overcloud_nodes()
+	print(nodes)
 	check_systemd_services()
 	check_baremetal_nodes()
 	check_cinder()
@@ -223,6 +238,7 @@ def check_osp13_services():
 		pass
 	else:
 		print("\033[1;91m\n%s\033[1;m" % "INVALID CHOICE")
+	check_ntp_status()
 
 		
 
@@ -230,6 +246,7 @@ def check_osp10_services():
 	print("\033[1;96m%s\033[1;m" % "OVERCLOUD NODES")
 	os.system("source ~/stackrc; nova list")
 	get_controllers_ip()
+	get_overcloud_nodes()
 	check_systemd_services()
 	check_baremetal_nodes()
 	check_cinder()
@@ -241,6 +258,16 @@ def check_osp10_services():
 	check_pcs_status()
 	check_disk_size()
 	check_ceph_cluster()
+	print("\033[1;96m\n%s\033[1;m" % "CHECK FOR CEPH CLUSTER AND FREE OSD SPACE(y/n) ?")
+	ceph_check_choice = raw_input()
+	if ceph_check_choice == "y":
+		check_ceph_cluster()
+		check_osd_freespace()
+	elif ceph_check_choice == "n":
+		pass
+	else:
+		print("\033[1;91m\n%s\033[1;m" % "INVALID CHOICE")
+	check_ntp_status()
 
 
 def ask_osp_version():
